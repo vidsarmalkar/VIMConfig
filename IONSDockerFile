@@ -1,0 +1,87 @@
+# Use an official Python runtime as a parent image
+FROM ubuntu:24.04
+
+# Set the working directory
+WORKDIR /workspace
+
+# Install required Python packages and PostgreSQL
+RUN apt-get update -y && \
+    apt install -y openssh-server sudo
+
+# Install repo for Python 3.11 - part 1
+RUN apt install -y software-properties-common
+
+# Install repo for Python 3.11 - part 1
+RUN add-apt-repository -y ppa:deadsnakes/ppa
+
+# Update repo
+RUN apt-get update
+
+# Install python 3.11
+RUN apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+
+# Install remaining dependencies
+RUN apt install -y curl wget git vim
+
+# Install nodejs
+RUN apt install -y nodejs npm
+
+# Update nodejs
+RUN npm cache clean -f && \
+    npm install -g n
+
+# Install nodejs packages
+RUN npm install --global yarn
+
+# Install ripgrep
+RUN apt install -y ripgrep
+
+# Install PIP
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
+
+# Install packages
+RUN python3.11 -m pip install uvicorn fastapi
+
+# Run SSH configuration
+RUN mkdir /var/run/sshd
+
+# Create user and add it to sudo group
+# -m: Create userdirectory
+# -s: set shell
+RUN useradd -s /bin/bash -m -d /home/vid vid
+
+# Change password
+RUN echo 'vid:test' | chpasswd
+
+# Add test user to sudoers to skip sudo password asking
+RUN echo 'vid ALL=(ALL) NOPASSWD: ALL' | tee -a /etc/sudoers
+
+# Run service
+RUN service ssh start
+
+
+# COPY vimrc
+COPY ./notebooks/projects/.vimrc /home/vid/.vimrc
+
+
+# Configure NEOVIM
+RUN cd /home/vid && \
+    curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+		https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+# Copy plugins
+COPY ./notebooks/projects/.vim /home/vid/.vim
+
+
+# Change permission
+RUN chown -R vid:vid /home/vid/.vim && \
+    chown -R vid:vid /home/vid/.vimrc
+
+
+# Expose port
+EXPOSE 22 8000 5000
+
+
+# Run command
+CMD service ssh start && \
+    bash
