@@ -1,5 +1,7 @@
 ## How to build
+```bash
 docker build -t ionos-local -f IONSDockerFile .
+```
 
 ## How to run
 docker run -itd -p 9999:22 -p 10000:5000 -p 10001:8000 -p 10002:80 -v ./notebooks:/workspace ionos-local
